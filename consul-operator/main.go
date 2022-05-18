@@ -8,6 +8,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	backupStorage "github.com/nokia/industrial-application-framework/consul-operator/pkg/backup_storage"
 	"github.com/operator-framework/operator-lib/leader"
 	"os"
 
@@ -83,6 +84,8 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
+
+	backupStorage.BackupCRStat = &backupStorage.BackupCRStatus{Client: mgr.GetClient()}
 
 	if err = (&controllers.ConsulReconciler{
 		Client: mgr.GetClient(),

@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.1.0
+	github.com/minio/minio-go/v7 v7.0.26
 	github.com/nokia/industrial-application-framework/alarmlogger v0.0.0-20210824095151-771352d42ef7
 	github.com/nokia/industrial-application-framework/componenttest-lib v0.0.0-20220302154657-2b2f359ea42d
 	github.com/onsi/ginkgo v1.16.4

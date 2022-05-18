@@ -7,6 +7,7 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	backupStorage "github.com/nokia/industrial-application-framework/consul-operator/pkg/backup_storage"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -306,11 +307,13 @@ func (r *ConsulReconciler) handleCreate(instance *app.Consul, namespace string) 
 
 	//This section is only needed if helm is not used for the deployment
 	//k8sClient := k8sdynamic.New(kubelib.GetKubeAPI())
-	//appliedApplicationResourceDescriptors, err := k8sClient.ApplyConcatenatedResources(out, namespace)
+	//appliedApplicationResourceDescriptors, err : = k8sClient.ApplyConcatenatedResources(out, namespace)
 	//if err != nil {
 	//	logger.Error(err, "failed to apply the templated resources")
 	//	return reconcile.Result{}, nil
 	//}
+
+	backupStorage.BackupCRStat.UploadDataToBucket(namespace)
 
 	instance.Status.AppliedResources = appliedPlatformResourceDescriptors
 	//This section is only needed if helm is not used for the deployment
