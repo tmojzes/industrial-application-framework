@@ -3,12 +3,14 @@ package backupStorage
 import (
 	"context"
 	"fmt"
+	consulapi "github.com/hashicorp/consul/api"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/nokia/industrial-application-framework/consul-operator/pkg/template"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/json"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -39,7 +41,7 @@ func (bStatus *BackupCRStatus) createMinioClient() (*minio.Client, error) {
 	return minioClient, nil
 }
 
-func (bStatus *BackupCRStatus) uploadFile(cl *minio.Client, packageName, content string) error {
+func (bStatus *BackupCRStatus) uploadFile(cl *minio.Client, content string) error {
 	logger := log.WithName("backup_storage").WithName("uploadFile")
 	logger.Info("Called")
 
@@ -79,11 +81,6 @@ func (bStatus *BackupCRStatus) uploadFile(cl *minio.Client, packageName, content
 	}
 	fmt.Println("--------Client Successfully uploaded object: ", uploadInfo)
 
-	/*	if _, err := cl.PutObject(context.Background(), bucketName, packageName, file, fileStat.Size(), minio.PutObjectOptions{ContentType: "application/text"}); err != nil {
-			log.Error(err, "putting file into bucket")
-			return err
-		}
-	*/
 	return nil
 }
 
@@ -124,6 +121,34 @@ func (bStatus *BackupCRStatus) getBackupCRStatus(nameSpace string) bool {
 	return false
 }
 
+func (bStatus *BackupCRStatus) readConsulContent() (string, error) {
+	logger := log.WithName("backup_storage").WithName("readConsulContent")
+	logger.Info("Called")
+
+	conf := consulapi.DefaultConfig()
+	conf.Address = fmt.Sprintf("consul.default.svc.cluster.local:8500")
+	consulClient, err := consulapi.NewClient(conf)
+	if err != nil {
+		logger.Error(err, "creating consul api client")
+		return "", err
+	}
+
+	KVPairs, _, err := consulClient.KV().List("/", nil)
+	if err != nil {
+		logger.Error(err, "listing consul content")
+		return "", err
+	}
+	log.Info("consul content", "KVPairs", KVPairs)
+
+	consulContent, err := json.Marshal(KVPairs)
+	if err != nil {
+		logger.Error(err, "marshal the KVPairs map")
+		return "", err
+	}
+
+	return string(consulContent), nil
+}
+
 func (bStatus *BackupCRStatus) UploadDataToBucket(nameSpace string) {
 	logger := log.WithName("backup_storage").WithName("UploadDataToBucket")
 	logger.Info("Called")
@@ -133,7 +158,11 @@ func (bStatus *BackupCRStatus) UploadDataToBucket(nameSpace string) {
 		if err != nil {
 			return
 		}
-		err = bStatus.uploadFile(minioClient, nameSpace, "test content")
+		consulContent, err := bStatus.readConsulContent()
+		if err != nil {
+			return
+		}
+		err = bStatus.uploadFile(minioClient, consulContent)
 		if err != nil {
 			return
 		}

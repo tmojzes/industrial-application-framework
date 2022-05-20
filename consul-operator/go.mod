@@ -3,6 +3,7 @@ module github.com/nokia/industrial-application-framework/consul-operator
 go 1.16
 
 require (
+	github.com/hashicorp/consul/api v1.1.0
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.1.0
 	github.com/minio/minio-go/v7 v7.0.26
 	github.com/nokia/industrial-application-framework/alarmlogger v0.0.0-20210824095151-771352d42ef7
