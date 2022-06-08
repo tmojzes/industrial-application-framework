@@ -8,7 +8,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	backupStorage "github.com/nokia/industrial-application-framework/consul-operator/pkg/backup_storage"
+	appdacnokiacomv1alpha1 "github.com/nokia/industrial-application-framework/consul-operator/api/v1alpha1"
 	"github.com/operator-framework/operator-lib/leader"
 	"os"
 
@@ -23,7 +23,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	appdacnokiacomv1alpha1 "github.com/nokia/industrial-application-framework/consul-operator/api/v1alpha1"
 	"github.com/nokia/industrial-application-framework/consul-operator/controllers"
 	//+kubebuilder:scaffold:imports
 )
@@ -84,8 +83,6 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-
-	backupStorage.BackupCRStat = &backupStorage.BackupCRStatus{Client: mgr.GetClient()}
 
 	if err = (&controllers.ConsulReconciler{
 		Client: mgr.GetClient(),
