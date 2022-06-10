@@ -1,0 +1,12 @@
+applicationName: Consul
+sourceDeploymentPath: deployment
+runtimeDeploymentPath: /usr/src/app
+appDeploymentDirName: app-deployment
+runtimeResReqPath: /usr/src/app/resource-reqs-generated
+resReqDirName: resource-reqs
+kubernetesAppDeploymentName: example-consul
+appPnaName: private-network-for-consul
+usingPnaLabelKey: ndac.appfw.private-network-access
+templater:
+    leftDelimiter: [[
+    rightDelimiter: ]]

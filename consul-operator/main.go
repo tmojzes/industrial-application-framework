@@ -9,8 +9,14 @@ import (
 	"flag"
 	"fmt"
 	appdacnokiacomv1alpha1 "github.com/nokia/industrial-application-framework/consul-operator/api/v1alpha1"
+	"github.com/nokia/industrial-application-framework/application-lib/pkg/config"
+	"github.com/nokia/industrial-application-framework/application-lib/pkg/handlers"
+	"github.com/nokia/industrial-application-framework/consul-operator/pkg/licenceexpired"
+	"github.com/nokia/industrial-application-framework/consul-operator/pkg/monitoring"
+	"github.com/nokia/industrial-application-framework/consul-operator/pkg/parameters"
 	"github.com/operator-framework/operator-lib/leader"
 	"os"
+	"strings"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -25,6 +31,10 @@ import (
 
 	"github.com/nokia/industrial-application-framework/consul-operator/controllers"
 	//+kubebuilder:scaffold:imports
+)
+
+const (
+	configDir = "/usr/src/app/config"
 )
 
 var (
@@ -56,6 +66,13 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
+	var operatorConfig config.OperatorConfig
+	operatorConfig, err := config.GetConfiguration(configDir)
+	if err != nil {
+		setupLog.Error(err, "unable to read configuration")
+		os.Exit(1)
+	}
+
 	watchNamespace, err := getWatchNamespace()
 	if err != nil {
 		setupLog.Error(err, "unable to get WatchNamespace, "+
@@ -64,7 +81,8 @@ func main() {
 
 	// Become the leader before proceeding
 	// to keep compatibility with previous operator sdk
-	err = leader.Become(context.TODO(), "consul-operator-lock")
+	lockName := strings.ToLower(operatorConfig.ApplicationName) + "-operator-lock"
+	err = leader.Become(context.TODO(), lockName)
 	if err != nil {
 		setupLog.Error(err, "unable to become the leader")
 		os.Exit(1)
@@ -84,10 +102,21 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.ConsulReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	reconciler := controllers.AppSpecificReconciler{
+		Common: handlers.OperatorReconciler{
+			Client:        mgr.GetClient(),
+			Scheme:        mgr.GetScheme(),
+			Configuration: operatorConfig,
+			Functions: handlers.ReconcilerHookFunctions{
+				CreateAppCr:                   appdacnokiacomv1alpha1.CreateAppInstance,
+				CreateAppStatusMonitor:        monitoring.CreateAppStatusMonitor,
+				CreateLicenceExpiredHandler:   licenceexpired.CreateLicenseExpiredHandler,
+				CheckNetworkParametersChanged: parameters.NetworkParametersChanged,
+			},
+		},
+	}
+
+	if err = controllers.SetupWithManager(mgr, &reconciler); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Consul")
 		os.Exit(1)
 	}
