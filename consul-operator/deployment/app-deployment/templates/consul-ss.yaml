@@ -104,4 +104,4 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-      serviceAccountName: consul-operator
+      serviceAccountName: controller-manager-backup
