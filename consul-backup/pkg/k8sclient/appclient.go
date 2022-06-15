@@ -3,9 +3,6 @@ package k8sclient
 import (
 	log "github.com/sirupsen/logrus"
 
-	appdacnokiacomv1alpha1 "github.com/nokia/industrial-application-framework/consul-backup/api/v1alpha1"
-	//	appv1alpha1 "github.com/nokia/industrial-application-framework/consul-backup/api/v1alpha1"
-	//	appv1alpha1 "gitlabe2.ext.net.nokia.com/Nokia_DAaaS/edge-microservices/application-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -22,7 +19,6 @@ var (
 
 func init() {
 	utilruntime.Must(corev1.AddToScheme(scheme))      //Scheme for Core V1
-	utilruntime.Must(appdacnokiacomv1alpha1.AddToScheme(scheme)) //Scheme for Applications
 }
 
 func GetK8sClient() (client.Client, error) {
@@ -34,7 +30,7 @@ func GetK8sClient() (client.Client, error) {
 }
 
 func CreateK8sClient() (client.Client, error) {
-	log.Info("CreateK8sClient called")
+	log.Info("createK8sClient called")
 
 	if k8sClient != nil {
 		log.Info("k8sClient already created")
@@ -52,7 +48,7 @@ func CreateK8sClient() (client.Client, error) {
 
 	cl, err := client.New(Config, client.Options{Scheme: scheme})
 	if err != nil {
-		log.Error(err, "failed to create client")
+		log.Error(err, "Failed to create client")
 		return nil, err
 	}
 	log.Info("client created")

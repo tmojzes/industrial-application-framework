@@ -4,12 +4,12 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   creationTimestamp: null
-  name: manager-role-backup
+  name: consul-backup-role
 rules:
 - apiGroups:
   - ops.dac.nokia.com
   resources:
-  - '*'
+  - backups
   verbs:
   - get
   - list

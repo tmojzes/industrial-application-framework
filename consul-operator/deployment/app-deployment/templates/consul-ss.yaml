@@ -98,10 +98,8 @@ spec:
               cpu: 100m
               memory: 64Mi
           env:
-            - name: WORK_DIR
-              value: /tmp
-            - name: WATCH_NAMESPACE
+            - name: OWN_NAMESPACE
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-      serviceAccountName: controller-manager-backup
+      serviceAccountName: consul-backup-service-account
