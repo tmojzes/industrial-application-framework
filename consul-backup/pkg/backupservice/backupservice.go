@@ -27,14 +27,14 @@ type BackupCRHandler struct {
 	secretAccessKey string
 }
 
-var BackupCRStat *BackupCRHandler
+var handler *BackupCRHandler
 
-func (hendler *BackupCRHandler) fillS3AccessInfo(nameSpace string) error {
+func (handler *BackupCRHandler) fillS3AccessInfo(nameSpace string) error {
 	log.Info("getBackupCRHandler called")
 
 	BackupCR := &unstructured.Unstructured{}
 	BackupCR.SetGroupVersionKind(schema.GroupVersionKind{Group: "ops.dac.nokia.com", Version: "v1alpha1", Kind: "Backup"})
-	err := hendler.Client.Get(context.TODO(), client.ObjectKey{ Namespace: nameSpace, Name: serviceconfig.ConfigData.BackupCrName}, BackupCR)
+	err := handler.Client.Get(context.TODO(), client.ObjectKey{ Namespace: nameSpace, Name: serviceconfig.ConfigData.BackupCrName}, BackupCR)
 
 	if err != nil {
 		log.Error(err, "Failed to get backup CRs")
@@ -48,10 +48,10 @@ func (hendler *BackupCRHandler) fillS3AccessInfo(nameSpace string) error {
 	}
 	
 	if found {
-		hendler.s3Endpoint = field["s3Endpoint"].(string)
-		hendler.bucketName = field["bucketConfiguration"].(map[string]interface{})["bucketName"].(string)
-		hendler.accessKey = field["bucketConfiguration"].(map[string]interface{})["accessKey"].(string)
-		hendler.secretAccessKey = field["bucketConfiguration"].(map[string]interface{})["secretAccessKey"].(string)
+		handler.s3Endpoint = field["s3Endpoint"].(string)
+		handler.bucketName = field["bucketConfiguration"].(map[string]interface{})["bucketName"].(string)
+		handler.accessKey = field["bucketConfiguration"].(map[string]interface{})["accessKey"].(string)
+		handler.secretAccessKey = field["bucketConfiguration"].(map[string]interface{})["secretAccessKey"].(string)
 		log.Info("backup CR found")
 		return nil
 	} else {
@@ -61,10 +61,10 @@ func (hendler *BackupCRHandler) fillS3AccessInfo(nameSpace string) error {
 
 }
 
-func (hendler *BackupCRHandler) uploadDataToS3Storage (nameSpace string) {
+func (handler *BackupCRHandler) uploadDataToS3Storage (nameSpace string) {
 	log.Info("UploadDataToBucket called")
 
-	err := hendler.fillS3AccessInfo(nameSpace)
+	err := handler.fillS3AccessInfo(nameSpace)
 	if err != nil {
 		return
 	}
@@ -76,15 +76,14 @@ func (hendler *BackupCRHandler) uploadDataToS3Storage (nameSpace string) {
 	if err != nil {
 		return
 	}
-	s3Cl, err := s3client.CreateS3Client(hendler.s3Endpoint, hendler.accessKey, hendler.secretAccessKey)
+	s3Cl, err := s3client.CreateS3Client(handler.s3Endpoint, handler.accessKey, handler.secretAccessKey)
 	if err != nil {
 		return
 	}
-	err = s3Cl.UploadFileToS3Storage( consulContent, hendler.bucketName)
+	err = s3Cl.UploadFileToS3Storage( consulContent, handler.bucketName)
 	if err != nil {
 		return
 	}
-
 
 	return
 }
@@ -97,24 +96,25 @@ func StartPeriodicBackup(nameSpace string) {
 		return
 	}
 
-	k8sclient, err := k8sclient.GetK8sClient()
+	k8sClient, err := k8sclient.GetK8sClient()
 	if err != nil {
-		log.Error(err, "Failed to get k8sClient")
+		return
 	}
 
-	BackupCRStat = &BackupCRHandler{Client: k8sclient}
-	BackupCRStat.uploadDataToS3Storage(nameSpace)
+	handler = &BackupCRHandler{Client: k8sClient}
+	handler.uploadDataToS3Storage(nameSpace)
 
 	duration, err := time.ParseDuration(serviceconfig.ConfigData.Duration)
 	if err != nil {
 		log.Error(err, "Failed to parse duration")
+		return
 	}
 
 	ticker := time.NewTicker(duration)
 	for range ticker.C {
 		err = serviceconfig.ReadServiceConfig()
 		if err == nil {
-			BackupCRStat.uploadDataToS3Storage(nameSpace)
+			handler.uploadDataToS3Storage(nameSpace)
 			log.Info("sleeping...")
 		}
 	}
