@@ -21,7 +21,7 @@ func main() {
 		panic(err)
 	}
 
-	backupService.BackupService(ownNamespace)
+	backupService.StartPeriodicBackup(ownNamespace)
 }
 
 func getOwnNamespace() (string, error) {

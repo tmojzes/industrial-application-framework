@@ -1,10 +1,16 @@
+// Copyright 2022 Nokia
+// Licensed under the BSD 3-Clause License.
+// SPDX-License-Identifier: BSD-3-Clause
+
 package backupService
 
 import (
 	"context"
 	"github.com/nokia/industrial-application-framework/consul-backup/pkg/consulclient"
 	"github.com/nokia/industrial-application-framework/consul-backup/pkg/k8sclient"
-	"github.com/nokia/industrial-application-framework/consul-backup/pkg/minioclient"
+	"github.com/nokia/industrial-application-framework/consul-backup/pkg/s3client"
+	"github.com/nokia/industrial-application-framework/consul-backup/pkg/serviceconfig"
+	"github.com/pkg/errors"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -13,78 +19,103 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type BackupCRStatus struct {
+type BackupCRHandler struct {
 	client.Client
+	s3Endpoint string
+	bucketName string
+	accessKey string
+	secretAccessKey string
 }
 
-var s3Endpoint, bucketName, accessKey, secretAccessKey string
+var BackupCRStat *BackupCRHandler
 
-var BackupCRStat *BackupCRStatus
-
-func (bStatus *BackupCRStatus) getBackupCRStatus(nameSpace string) bool {
-	log.Info("getBackupCRStatus called")
+func (hendler *BackupCRHandler) fillS3AccessInfo(nameSpace string) error {
+	log.Info("getBackupCRHandler called")
 
 	BackupCR := &unstructured.Unstructured{}
 	BackupCR.SetGroupVersionKind(schema.GroupVersionKind{Group: "ops.dac.nokia.com", Version: "v1alpha1", Kind: "Backup"})
-    err := bStatus.Client.Get(context.TODO(), client.ObjectKey{ Namespace: nameSpace, Name: "backup-consul"}, BackupCR)
+	err := hendler.Client.Get(context.TODO(), client.ObjectKey{ Namespace: nameSpace, Name: serviceconfig.ConfigData.BackupCrName}, BackupCR)
 
 	if err != nil {
 		log.Error(err, "Failed to get backup CRs")
-		return false
+		return err
 	}
 
 	field, found, err := unstructured.NestedMap(BackupCR.Object, "status")
-	if err == nil && found {
-		s3Endpoint = field["s3Endpoint"].(string)
-		bucketName = field["bucketConfiguration"].(map[string]interface{})["bucketName"].(string)
-		accessKey = field["bucketConfiguration"].(map[string]interface{})["accessKey"].(string)
-		secretAccessKey = field["bucketConfiguration"].(map[string]interface{})["secretAccessKey"].(string)
+	if err != nil {
+		log.Error(err, "Failed to read backup CR")
+		return err
+	}
+	
+	if found {
+		hendler.s3Endpoint = field["s3Endpoint"].(string)
+		hendler.bucketName = field["bucketConfiguration"].(map[string]interface{})["bucketName"].(string)
+		hendler.accessKey = field["bucketConfiguration"].(map[string]interface{})["accessKey"].(string)
+		hendler.secretAccessKey = field["bucketConfiguration"].(map[string]interface{})["secretAccessKey"].(string)
 		log.Info("backup CR found")
-		return true
+		return nil
+	} else {
+		log.Error("Status not found in backup CR")
+		return errors.New("Status not found in backup CR")
 	}
 
-	log.Error("Error reading backup CR status")
-	return false
 }
 
-func (bStatus *BackupCRStatus) uploadDataToBucket(nameSpace string) {
+func (hendler *BackupCRHandler) uploadDataToS3Storage (nameSpace string) {
 	log.Info("UploadDataToBucket called")
 
-	if bStatus.getBackupCRStatus(nameSpace) {
-		minioClient, err := minioclient.CreateMinioClient(s3Endpoint, accessKey, secretAccessKey)
-		if err != nil {
-			return
-		}
-		consulClient, err := consulclient.CreateConsulClient()
-		if err != nil {
-			return
-		}
-		consulContent, err := consulclient.ReadConsulContent(consulClient)
-		if err != nil {
-			return
-		}
-		err = minioclient.UploadFileToMinio(minioClient, consulContent, bucketName)
-		if err != nil {
-			return
-		}
+	err := hendler.fillS3AccessInfo(nameSpace)
+	if err != nil {
+		return
 	}
+	consulClient, err := consulclient.CreateConsulClient()
+	if err != nil {
+		return
+	}
+	consulContent, err := consulclient.ReadConsulContent(consulClient)
+	if err != nil {
+		return
+	}
+	s3Cl, err := s3client.CreateS3Client(hendler.s3Endpoint, hendler.accessKey, hendler.secretAccessKey)
+	if err != nil {
+		return
+	}
+	err = s3Cl.UploadFileToS3Storage( consulContent, hendler.bucketName)
+	if err != nil {
+		return
+	}
+
 
 	return
 }
 
-func BackupService(nameSpace string) {
+func StartPeriodicBackup(nameSpace string) {
 	log.Info("BackupService called")
 
-	k8sclient, err := k8sclient.GetK8sClient()
-
+	err := serviceconfig.ReadServiceConfig()
 	if err != nil {
-		log.Error(err, "Get client error")
-	} else {
-		BackupCRStat = &BackupCRStatus{Client: k8sclient}
-		for {
-			BackupCRStat.uploadDataToBucket(nameSpace)
-			log.Infof("sleeping...")
-			time.Sleep(1*time.Hour)
+		return
+	}
+
+	k8sclient, err := k8sclient.GetK8sClient()
+	if err != nil {
+		log.Error(err, "Failed to get k8sClient")
+	}
+
+	BackupCRStat = &BackupCRHandler{Client: k8sclient}
+	BackupCRStat.uploadDataToS3Storage(nameSpace)
+
+	duration, err := time.ParseDuration(serviceconfig.ConfigData.Duration)
+	if err != nil {
+		log.Error(err, "Failed to parse duration")
+	}
+
+	ticker := time.NewTicker(duration)
+	for range ticker.C {
+		err = serviceconfig.ReadServiceConfig()
+		if err == nil {
+			BackupCRStat.uploadDataToS3Storage(nameSpace)
+			log.Info("sleeping...")
 		}
 	}
 }

@@ -7,6 +7,7 @@ package consulclient
 import (
 	"fmt"
 	consulapi "github.com/hashicorp/consul/api"
+	"github.com/nokia/industrial-application-framework/consul-backup/pkg/serviceconfig"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/json"
 )
@@ -15,7 +16,8 @@ func CreateConsulClient() (*consulapi.Client, error) {
 	log.Info("CreateConsulClient called")
 
 	conf := consulapi.DefaultConfig()
-	conf.Address = fmt.Sprintf("consul.default.svc.cluster.local:8500")
+	conf.Address = fmt.Sprintf(serviceconfig.ConfigData.ConsulAddress)
+
 	consulClient, err := consulapi.NewClient(conf)
 	if err != nil {
 		log.Error(err, "Failed to creat consul api client")

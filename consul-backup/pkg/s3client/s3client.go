@@ -2,7 +2,7 @@
 // Licensed under the BSD 3-Clause License.
 // SPDX-License-Identifier: BSD-3-Clause
 
-package minioclient
+package s3client
 
 import (
 	"context"
@@ -14,9 +14,13 @@ import (
 	"strings"
 )
 
+type Client struct {
+	*minio.Client
+}
+
 const workDir = "/tmp"
 
-func CreateMinioClient(s3Endpoint, accessKey, secretAccessKey string) (*minio.Client, error) {
+func CreateS3Client(s3Endpoint, accessKey, secretAccessKey string) (*Client, error) {
 	log.Info("createMinioClient called")
 	minioClient, err := minio.New(s3Endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKey, secretAccessKey, ""),
@@ -26,10 +30,10 @@ func CreateMinioClient(s3Endpoint, accessKey, secretAccessKey string) (*minio.Cl
 		return nil, errors.Wrapf(err, "Failed to initialize Minio Client, accessKey: %v", accessKey)
 	}
 	log.Info("minio Client is initialized", "accessKey", accessKey)
-	return minioClient, nil
+	return &Client{minioClient}, nil
 }
 
-func UploadFileToMinio(cl *minio.Client, content, bucketName string) error {
+func (cl Client) UploadFileToS3Storage(content, bucketName string) error {
 	log.Info("uploadFile called")
 
 	filePath := strings.Join([]string{workDir, "consulContent.json"}, "/")
