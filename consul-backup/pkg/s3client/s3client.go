@@ -59,6 +59,7 @@ func (cl Client) UploadFileToS3Storage(content, bucketName string) error {
 	// In this function a file is uploaded with the same name to the bucket.
 	// Backup-operator uses versioning-enabled buckets, that allows to keep multiple variants of an object in the same bucket.
 	// Every version of an object can be retrieved, preserved and restored in S3 bucket.
+	// The previous versions of the uploaded file are not counted against the quota of the bucket.
 	uploadInfo, err := cl.FPutObject(context.Background(), bucketName, file.Name(), filePath, minio.PutObjectOptions{})
 	if err != nil {
 		log.Error(err, "Failed to put file into bucket")
@@ -95,7 +96,7 @@ func (cl Client) UploadVersionedFileToS3Storage(content, bucketName string) erro
 
 	// In this function a file is uploaded with unique name to the bucket using current timestamp in the file name.
 	// The files in the bucket are not versioned but each upload creates a new file in the bucket.
-
+	// The previous versions of the uploaded file are counted using the quota of the bucket.
 	uploadInfo, err := cl.FPutObject(context.Background(), bucketName, file.Name(), filePath, minio.PutObjectOptions{ContentType: ""})
 	if err != nil {
 		log.Error(err, "Failed to put file into bucket")
