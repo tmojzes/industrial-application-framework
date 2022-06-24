@@ -5,6 +5,7 @@
 package serviceconfig
 
 import (
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -26,21 +27,18 @@ func ReadServiceConfig() error {
 
 	configFile, err := os.Open(os.Getenv(configFileKey))
 	if err != nil {
-		log.Error(err, "Failed to open config file")
-		return err
+		return errors.Wrap(err, "Failed to open config file")
 	}
 
 	byteValue, err := ioutil.ReadAll(configFile)
 	if err != nil {
-		log.Error(err, "Failed to read from config file")
-		return err
+		return errors.Wrap(err, "Failed to read from config file")
 	}
 
 	err = yaml.Unmarshal(byteValue, &ConfigData)
 
 	if err != nil {
-		log.Error(err, "Failed to unmarshal the config data")
-		return err
+		return errors.Wrap(err, "Failed to unmarshal the config data")
 	}
 
 	return nil

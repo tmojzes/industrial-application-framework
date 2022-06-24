@@ -91,7 +91,7 @@ spec:
             - containerPort: {{.Values.service.server}}
               name: server
         - name: consul-backup
-          image: registry.dac.nokia.com/public/backup:1.0.0
+          image: registry.dac.nokia.com/public/consul-backup:1.0.0
           imagePullPolicy: IfNotPresent
           resources:
             limits:

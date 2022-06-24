@@ -7,6 +7,7 @@ package main
 import (
 	"fmt"
 	backupService "github.com/nokia/industrial-application-framework/consul-backup/pkg/backupservice"
+	"github.com/nokia/industrial-application-framework/consul-backup/pkg/serviceconfig"
 	log "github.com/sirupsen/logrus"
 
 	"os"
@@ -21,7 +22,18 @@ func main() {
 		panic(err)
 	}
 
-	backupService.StartPeriodicBackup(ownNamespace)
+	err = serviceconfig.ReadServiceConfig()
+	if err != nil {
+		log.Error(err, "Failed to read configmap ")
+		panic(err)
+	}
+
+	err = backupService.StartPeriodicBackup(ownNamespace)
+	err = serviceconfig.ReadServiceConfig()
+	if err != nil {
+		log.Error(err, "Failed to start periodical backup ")
+		panic(err)
+	}
 }
 
 func getOwnNamespace() (string, error) {

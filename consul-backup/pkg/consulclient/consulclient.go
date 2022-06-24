@@ -8,6 +8,7 @@ import (
 	"fmt"
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/nokia/industrial-application-framework/consul-backup/pkg/serviceconfig"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/json"
 )
@@ -20,8 +21,7 @@ func CreateConsulClient() (*consulapi.Client, error) {
 
 	consulClient, err := consulapi.NewClient(conf)
 	if err != nil {
-		log.Error(err, "Failed to creat consul api client")
-		return nil, err
+		return nil, errors.Wrap(err, "Failed to creat consul api client")
 	}
 	return consulClient, nil
 }
@@ -31,15 +31,13 @@ func ReadConsulContent(consulClient *consulapi.Client) (string, error) {
 
 	KVPairs, _, err := consulClient.KV().List("/", nil)
 	if err != nil {
-		log.Error(err, "Failed to list consul content")
-		return "", err
+		return "", errors.Wrap(err, "Failed to list consul content")
 	}
 	log.Info("consul content", "KVPairs", KVPairs)
 
 	consulContent, err := json.Marshal(KVPairs)
 	if err != nil {
-		log.Error(err, "Failed to marshal the KVPairs map")
-		return "", err
+		return "", errors.Wrap(err, "Failed to marshal the KVPairs map")
 	}
 
 	return string(consulContent), nil

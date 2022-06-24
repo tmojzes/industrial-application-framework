@@ -29,7 +29,7 @@ type BackupCRHandler struct {
 
 var handler *BackupCRHandler
 
-func (handler *BackupCRHandler) fillS3AccessInfo(nameSpace string) error {
+func (handler *BackupCRHandler) fillBackupStoreAccessInfo(nameSpace string) error {
 	log.Info("getBackupCRHandler called")
 
 	BackupCR := &unstructured.Unstructured{}
@@ -37,14 +37,12 @@ func (handler *BackupCRHandler) fillS3AccessInfo(nameSpace string) error {
 	err := handler.Client.Get(context.TODO(), client.ObjectKey{ Namespace: nameSpace, Name: serviceconfig.ConfigData.BackupCrName}, BackupCR)
 
 	if err != nil {
-		log.Error(err, "Failed to get backup CRs")
-		return err
+		return errors.Wrap(err, "Failed to get backup CRs")
 	}
 
 	field, found, err := unstructured.NestedMap(BackupCR.Object, "status")
 	if err != nil {
-		log.Error(err, "Failed to read backup CR")
-		return err
+		return errors.Wrap(err, "Failed to read backup CR")
 	}
 	
 	if found {
@@ -55,67 +53,65 @@ func (handler *BackupCRHandler) fillS3AccessInfo(nameSpace string) error {
 		log.Info("backup CR found")
 		return nil
 	} else {
-		log.Error("Status not found in backup CR")
 		return errors.New("Status not found in backup CR")
 	}
 
 }
 
-func (handler *BackupCRHandler) uploadDataToS3Storage (nameSpace string) {
+func (handler *BackupCRHandler) uploadDataToBackupStore (nameSpace string) error {
 	log.Info("UploadDataToBucket called")
 
-	err := handler.fillS3AccessInfo(nameSpace)
+	err := handler.fillBackupStoreAccessInfo(nameSpace)
 	if err != nil {
-		return
+		return errors.Wrap(err, "Failed to get backup store access info")
 	}
 	consulClient, err := consulclient.CreateConsulClient()
 	if err != nil {
-		return
+		return errors.Wrap(err, "Fail to create consul client")
 	}
 	consulContent, err := consulclient.ReadConsulContent(consulClient)
 	if err != nil {
-		return
+		return errors.Wrap(err, "Failed to read consul content")
 	}
 	s3Cl, err := s3client.CreateS3Client(handler.s3Endpoint, handler.accessKey, handler.secretAccessKey)
 	if err != nil {
-		return
+		return errors.Wrap(err, "Failed to create backup store client")
 	}
 	err = s3Cl.UploadFileToS3Storage( consulContent, handler.bucketName)
 	if err != nil {
-		return
+		return errors.Wrap(err, "Failed to store in backup store")
 	}
 
-	return
+	return nil
 }
 
-func StartPeriodicBackup(nameSpace string) {
+func StartPeriodicBackup(nameSpace string) error {
 	log.Info("BackupService called")
-
-	err := serviceconfig.ReadServiceConfig()
-	if err != nil {
-		return
-	}
 
 	k8sClient, err := k8sclient.GetK8sClient()
 	if err != nil {
-		return
+		return errors.Wrap(err, "Failed to get k8s client")
 	}
 
-	handler = &BackupCRHandler{Client: k8sClient}
-	handler.uploadDataToS3Storage(nameSpace)
+	handler := &BackupCRHandler{Client: k8sClient}
+	err = handler.uploadDataToBackupStore(nameSpace)
+	if err != nil {
+		log.Error(err, "Failed to upload data to backup storage")
+	}
 
 	duration, err := time.ParseDuration(serviceconfig.ConfigData.Duration)
 	if err != nil {
-		log.Error(err, "Failed to parse duration")
-		return
+		return errors.Wrap(err, "Failed to parse duration")
 	}
 
 	ticker := time.NewTicker(duration)
 	for range ticker.C {
-		err = serviceconfig.ReadServiceConfig()
-		if err == nil {
-			handler.uploadDataToS3Storage(nameSpace)
-			log.Info("sleeping...")
+		err = handler.uploadDataToBackupStore(nameSpace)
+		if err != nil {
+			log.Error(err, "Failed to upload a file to backup storage")
 		}
+		log.Info("sleeping...")
 	}
+
+	return errors.New("Periodical backup exited")
 }

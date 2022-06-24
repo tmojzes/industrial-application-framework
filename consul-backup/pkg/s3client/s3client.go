@@ -40,70 +40,26 @@ func (cl Client) UploadFileToS3Storage(content, bucketName string) error {
 
 	file, err := os.Create(filePath)
 	if err != nil {
-		log.Error(err, "Failed to create file")
-		return err
+		return errors.Wrap(err, "Failed to create file")
 	}
 	defer file.Close()
 
 	if _, err = file.WriteString(content); err != nil {
-		log.Error(err, "Failed to write file")
-		return err
+		return errors.Wrap(err, "Failed to write file")
 	}
 
 	err = file.Sync()
 	if err != nil {
-		log.Error(err, "Failed to sync file")
-		return err
+		return errors.Wrap(err, "Failed to sync file")
 	}
 
-	// In this function a file is uploaded with the same name to the bucket.
-	// Backup-operator uses versioning-enabled buckets, that allows to keep multiple variants of an object in the same bucket.
-	// Every version of an object can be retrieved, preserved and restored in S3 bucket.
-	// The previous versions of the uploaded file are not counted against the quota of the bucket.
+	// In this function a file is uploaded with the same name to the bucket, it overwrites the previous version of the file.
+	// If the earlier version of the file is needed different file name shall be used.
 	uploadInfo, err := cl.FPutObject(context.Background(), bucketName, file.Name(), filePath, minio.PutObjectOptions{})
 	if err != nil {
-		log.Error(err, "Failed to put file into bucket")
-		return err
+		return errors.Wrap(err, "Failed to put file into bucket")
 	}
 	log.Info("--------client successfully", "uploaded object:", uploadInfo)
 
 	return nil
 }
-
-/*
-func (cl Client) UploadVersionedFileToS3Storage(content, bucketName string) error {
-	log.Info("UploadVersionedFileToS3Storage called")
-
-	filePath := strings.Join([]string{workDir, "consulContent "+time.Now().Format("2006-01-02 03:04:05")+".json"}, "/")
-
-	file, err := os.Create(filePath)
-	if err != nil {
-		log.Error(err, "Failed to create file")
-		return err
-	}
-	defer file.Close()
-
-	if _, err = file.WriteString(content); err != nil {
-		log.Error(err, "Failed to write file")
-		return err
-	}
-
-	err = file.Sync()
-	if err != nil {
-		log.Error(err, "Failed to sync file")
-		return err
-	}
-
-	// In this function a file is uploaded with unique name to the bucket using current timestamp in the file name.
-	// The files in the bucket are not versioned but each upload creates a new file in the bucket.
-	// The previous versions of the uploaded file are counted using the quota of the bucket.
-	uploadInfo, err := cl.FPutObject(context.Background(), bucketName, file.Name(), filePath, minio.PutObjectOptions{ContentType: ""})
-	if err != nil {
-		log.Error(err, "Failed to put file into bucket")
-		return err
-	}
-	log.Info("--------client successfully", "uploaded object:", uploadInfo)
-
-	return nil
-}
-*/

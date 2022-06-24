@@ -24,8 +24,6 @@ RUN make bin-build
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
 
-ENV DEPLOYMENT_DIR=/usr/src/app
-
 WORKDIR /
 COPY --from=builder /workspace/consul-backup .
 
