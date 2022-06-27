@@ -29,7 +29,6 @@ func main() {
 	}
 
 	err = backupService.StartPeriodicBackup(ownNamespace)
-	err = serviceconfig.ReadServiceConfig()
 	if err != nil {
 		log.Error(err, "Failed to start periodical backup ")
 		panic(err)
