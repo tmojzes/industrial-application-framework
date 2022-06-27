@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"github.com/nokia/industrial-application-framework/application-lib/pkg/config"
 	"github.com/nokia/industrial-application-framework/application-lib/pkg/handlers"
-	appdacnokiacomv1alpha1 "github.com/nokia/industrial-application-framework/consul-operator/api/v1alpha1"
 	"github.com/nokia/industrial-application-framework/consul-operator/pkg/licenceexpired"
 	"github.com/nokia/industrial-application-framework/consul-operator/pkg/monitoring"
 	"github.com/nokia/industrial-application-framework/consul-operator/pkg/parameters"
@@ -29,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	appdacnokiacomv1alpha1 "github.com/nokia/industrial-application-framework/consul-operator/api/v1alpha1"
 	"github.com/nokia/industrial-application-framework/consul-operator/controllers"
 	//+kubebuilder:scaffold:imports
 )
