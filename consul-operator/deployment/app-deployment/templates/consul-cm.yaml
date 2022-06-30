@@ -12,5 +12,5 @@ data:
     telemetry{prometheus_retention_time="24h" disable_hostname=true}
   consul-backup-config.yaml: |
     duration: 1m59s
-    consulAddress: consul.default.svc.cluster.local:8500
+    consulAddress: example-consul-service:8500
     backupCrName: backup-consul
