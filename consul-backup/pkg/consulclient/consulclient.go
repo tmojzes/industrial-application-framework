@@ -42,3 +42,16 @@ func ReadConsulContent(consulClient *consulapi.Client) (string, error) {
 
 	return string(consulContent), nil
 }
+
+func AddEntryToConsul(consulClient *consulapi.Client, key, value string) (error) {
+	log.Info("AddEntryToConsul called")
+
+	d := &consulapi.KVPair{Key: key, Value: []byte(value)}
+	_, err := consulClient.KV().Put(d, nil)
+
+	if err != nil {
+		errors.Wrap(err, "Failed to add entry to consul")
+	}
+	return err
+}
+
