@@ -6,6 +6,7 @@ package backupService
 
 import (
 	"context"
+	consulapi "github.com/hashicorp/consul/api"
 	"github.com/nokia/industrial-application-framework/consul-backup/pkg/consulclient"
 	"github.com/nokia/industrial-application-framework/consul-backup/pkg/k8sclient"
 	"github.com/nokia/industrial-application-framework/consul-backup/pkg/s3client"
@@ -58,21 +59,21 @@ func (handler *BackupCRHandler) fillBackupStoreAccessInfo(nameSpace string) erro
 
 }
 
-func (handler *BackupCRHandler) uploadDataToBackupStore (nameSpace string) error {
+func (handler *BackupCRHandler) uploadDataToBackupStore (nameSpace string, consulClient *consulapi.Client) error {
 	log.Info("UploadDataToBucket called")
 
 	err := handler.fillBackupStoreAccessInfo(nameSpace)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get backup store access info")
 	}
-	consulClient, err := consulclient.CreateConsulClient()
-	if err != nil {
-		return errors.Wrap(err, "Fail to create consul client")
+	if consulClient == nil {
+		return errors.Wrap(err, "No consul client")
 	}
 	consulContent, err := consulclient.ReadConsulContent(consulClient)
 	if err != nil {
 		return errors.Wrap(err, "Failed to read consul content")
 	}
+
 	s3Cl, err := s3client.CreateS3Client(handler.s3Endpoint, handler.accessKey, handler.secretAccessKey)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create backup store client")
@@ -93,8 +94,19 @@ func StartPeriodicBackup(nameSpace string) error {
 		return errors.Wrap(err, "Failed to get k8s client")
 	}
 
+	consulClient, err := consulclient.CreateConsulClient()
+	if err == nil {
+		// insert sample data to example-consul
+		err = consulclient.AddEntryToConsul(consulClient,"sample-value",time.Now().Format("2006-01-02 03:04:05"))
+		if err != nil {
+			log.Error(err, "Failed to add consul entry")
+		}
+	} else {
+		log.Error(err, "Fail to create consul client")
+	}
+
 	handler := &BackupCRHandler{Client: k8sClient}
-	err = handler.uploadDataToBackupStore(nameSpace)
+	err = handler.uploadDataToBackupStore(nameSpace, consulClient)
 	if err != nil {
 		log.Error(err, "Failed to upload data to backup storage")
 	}
@@ -106,7 +118,7 @@ func StartPeriodicBackup(nameSpace string) error {
 
 	ticker := time.NewTicker(duration)
 	for range ticker.C {
-		err = handler.uploadDataToBackupStore(nameSpace)
+		err = handler.uploadDataToBackupStore(nameSpace, consulClient)
 		if err != nil {
 			log.Error(err, "Failed to upload a file to backup storage")
 		}
