@@ -10,3 +10,7 @@ metadata:
 data:
   metrics.hcl: |
     telemetry{prometheus_retention_time="24h" disable_hostname=true}
+  consul-backup-config.yaml: |
+    duration: 1m59s
+    consulAddress: example-consul-service:8500
+    backupCrName: backup-consul

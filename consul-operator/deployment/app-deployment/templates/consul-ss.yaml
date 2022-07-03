@@ -40,8 +40,8 @@ spec:
           imagePullPolicy: IfNotPresent
           resources:
             limits:
-              cpu: 750m
-              memory: 384Mi
+              cpu: 650m
+              memory: 320Mi
           args:
             - "agent"
             - "-bind=0.0.0.0"
@@ -90,3 +90,21 @@ spec:
               name: consuldns
             - containerPort: {{.Values.service.server}}
               name: server
+        - name: consul-backup
+          image: registry.dac.nokia.com/public/consul-backup/consul-backup:1.2
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          env:
+            - name: OWN_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: CONFIG_FILE
+              value: "/var/lib/custom-consul-config/consul-backup-config.yaml"
+          volumeMounts:
+            - mountPath: /var/lib/custom-consul-config
+              name: config
+      serviceAccountName: consul-backup-service-account
