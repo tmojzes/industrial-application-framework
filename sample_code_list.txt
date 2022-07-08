@@ -19,7 +19,6 @@ application-lib/pkg/template/template.go
 application-lib/pkg/types/common_interfaces.go
 application-lib/pkg/types/common_types.go
 application-lib/pkg/types/common_types_generated.deepcopy.go
-application-lib/pkg/util/copy
 application-lib/pkg/util/copy/copy.go
 application-lib/pkg/util/finalizer/finalizers.go
 
@@ -94,7 +93,6 @@ consul-operator/controllers/predicate.go
 consul-operator/deployment/.gitignore
 consul-operator/deployment/app-deployment/.helmignore
 consul-operator/deployment/app-deployment/Chart.yaml
-consul-operator/deployment/app-deployment/templates
 consul-operator/deployment/app-deployment/templates/consul-cm.yaml
 consul-operator/deployment/app-deployment/templates/consul-role-binding.yaml
 consul-operator/deployment/app-deployment/templates/consul-role.yaml
