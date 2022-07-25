@@ -18,15 +18,15 @@ RUN go mod download
 COPY ./ /workspace
 
 # Build
-RUN make all
+RUN make build
 
-FROM docker.io/library/alpine:latest
+FROM alpine:latest
 
 ENV RESREQ_DIR=/usr/src/app/resource-reqs-generated \
     DEPLOYMENT_DIR=/usr/src/app
 
 WORKDIR /
-COPY --from=builder /workspace/app-operator .
+COPY --from=builder /workspace/app-operator /consul-operator
 
 COPY deployment/helm /usr/local/bin/helm
 RUN chmod +x  /usr/local/bin/helm
@@ -37,4 +37,4 @@ RUN chmod -R 770 /usr/src/app/
 
 USER 65532:65532
 
-ENTRYPOINT ["/app-operator"]
+ENTRYPOINT ["/consul-operator"]
