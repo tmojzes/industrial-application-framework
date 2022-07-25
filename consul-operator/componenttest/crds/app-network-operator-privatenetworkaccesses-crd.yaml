@@ -10,7 +10,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.6.1
-  creationTimestamp: null
   name: privatenetworkaccesses.ops.dac.nokia.com
 spec:
   group: ops.dac.nokia.com
@@ -30,24 +29,27 @@ spec:
             API
           properties:
             apiVersion:
-              description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              description: |
+                APIVersion defines the versioned schema of this representation
+                of an object. Servers should convert recognized schemas to the latest
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
               type: string
             kind:
-              description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              description: |
+                Kind is a string value representing the REST resource this
+                object represents. Servers may infer this from the endpoint the client
+                submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
               type: string
             metadata:
               type: object
             spec:
               description: PrivateNetworkAccessSpec defines the desired state of PrivateNetworkAccess
               properties:
-                additionalRoutes:
-                  description: 'these routes will be configured in the application components,
-                  eg: customer network can be defined here, where an app component
-                  need to connect to (optional)'
+                additionalRoutes: 
+                  description: |
+                    These routes will be configured in the application components,
+                    eg: customer network can be defined here, where an app component
+                    need to connect to (optional)
                   items:
                     type: string
                   type: array
@@ -92,7 +94,8 @@ spec:
                   type: array
                   x-kubernetes-list-type: atomic
               setCustomerIPAsSrcAddressOfOutgoingPackets:
-                description: This option activates the automatic source address rewriting,
+                description: |
+                  This option activates the automatic source address rewriting,
                   to use the assigned customer routable IP address for all the outgoing
                   packets going towards the AppFW vrouter. If there is a client in
                   the application that establishes connection with an external server
