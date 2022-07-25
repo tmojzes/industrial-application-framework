@@ -23,4 +23,3 @@ testbin/*
 *.swp
 *.swo
 *~
-consul-operator/componenttest/resources

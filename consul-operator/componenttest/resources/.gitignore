@@ -1,2 +1,4 @@
 etcd
+etcd.[0-9]
 kube-apiserver
+kube-apiserver.[0-9]
