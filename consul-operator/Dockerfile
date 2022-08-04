@@ -18,7 +18,7 @@ RUN go mod download
 COPY ./ /workspace
 
 # Build
-RUN make build
+RUN make all
 
 FROM alpine:latest
 
