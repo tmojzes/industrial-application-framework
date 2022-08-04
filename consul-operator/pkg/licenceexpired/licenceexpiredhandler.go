@@ -6,6 +6,7 @@ package licenceexpired
 
 import (
 	"context"
+
 	"github.com/nokia/industrial-application-framework/alarmlogger"
 	"github.com/nokia/industrial-application-framework/application-lib/pkg/licenceexpired"
 	"github.com/nokia/industrial-application-framework/application-lib/pkg/monitoring"
@@ -48,13 +49,13 @@ func (cb *SampleFuncs) Expired() {
 
 	cb.Monitor.Pause()
 	cb.AppInstance.GetStatus().SetAppStatus(common_types.AppStatusFrozen)
-	if err := cb.RuntimeClient.Status().Update(context.TODO(), cb.AppInstance); nil != err {
+	if err := cb.RuntimeClient.Status().Update(context.TODO(), cb.AppInstance); err != nil {
 		log.Error(err, "status appStatus update failed", "appStatus", cb.AppInstance.GetStatus().GetAppStatus())
 	}
 
 	ns := cb.AppInstance.GetObjectMeta().Namespace
 	svcList, err := cb.ClientSet.CoreV1().Services(ns).List(context.TODO(), cb.getSvcListOptions())
-	if nil != err {
+	if err != nil {
 		log.Error(err, "Failed in listing services in ", "namespace", ns)
 		return
 	}
@@ -72,7 +73,7 @@ func (cb *SampleFuncs) Expired() {
 		svcs = append(svcs, toSave)
 		deletePolicy := v1.DeletePropagationBackground
 		if err := cb.ClientSet.CoreV1().Services(ns).Delete(context.TODO(), name, v1.DeleteOptions{
-			PropagationPolicy: &deletePolicy}); nil != err {
+			PropagationPolicy: &deletePolicy}); err != nil {
 			log.Error(err, "Failed to delete ", "service", name)
 			continue
 		}
@@ -102,14 +103,14 @@ func (cb *SampleFuncs) Activate() {
 
 	ns := cb.AppInstance.GetObjectMeta().Namespace
 	cb.AppInstance.GetStatus().SetAppStatus(cb.Monitor.GetApplicationStatus())
-	if err := cb.RuntimeClient.Status().Update(context.TODO(), cb.AppInstance); nil != err {
+	if err := cb.RuntimeClient.Status().Update(context.TODO(), cb.AppInstance); err != nil {
 		log.Error(err, "status appStatus update failed", "appStatus", cb.AppInstance.GetStatus().GetAppStatus())
 	}
 	cb.Monitor.Run()
 
 	for _, svc := range cb.services {
 		result, err := cb.ClientSet.CoreV1().Services(ns).Create(context.TODO(), svc, v1.CreateOptions{})
-		if nil != err {
+		if err != nil {
 			log.Error(err, "Failed to create ", "service", svc.GetObjectMeta().GetName())
 			continue
 		}

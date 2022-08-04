@@ -172,7 +172,7 @@ Example:
 				return
 			}
 			instance.Status.AppReportedData.MetricsClusterIp = svc.Spec.ClusterIP
-			if err := r.client.Status().Update(context.TODO(), instance); nil != err {
+			if err := r.client.Status().Update(context.TODO(), instance); err != nil {
 				logger.Error(err, "status app reported data update failed")
 			}
 		},

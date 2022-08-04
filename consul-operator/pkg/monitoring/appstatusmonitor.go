@@ -6,6 +6,7 @@ package monitoring
 
 import (
 	"context"
+
 	"github.com/nokia/industrial-application-framework/application-lib/pkg/handlers"
 	"github.com/nokia/industrial-application-framework/application-lib/pkg/monitoring"
 	common_types "github.com/nokia/industrial-application-framework/application-lib/pkg/types"
@@ -34,7 +35,7 @@ func CreateAppStatusMonitor(instance common_types.OperatorCr, namespace string, 
 				))
 			}
 
-			if err := reconciler.Client.Status().Update(context.TODO(), instance); nil != err {
+			if err := reconciler.Client.Status().Update(context.TODO(), instance); err != nil {
 				logger.Error(err, "status app reported data update failed")
 			}
 		},
