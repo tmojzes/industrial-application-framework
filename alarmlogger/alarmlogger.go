@@ -28,18 +28,18 @@ const (
 	Info     AlarmSeverity = "INFO"
 
 	// visibility
-	Global 	   AlarmVisibility = "GLOBAL"		// default, visible "anywhere"
-	Operations AlarmVisibility = "OPERATIONS"   // not visisble in C-UI (of NDAC)
+	Global     AlarmVisibility = "GLOBAL"     // default, visible "anywhere"
+	Operations AlarmVisibility = "OPERATIONS" // not visisble in C-UI (of NDAC)
 )
 
 type AlarmDetails struct {
-	Name       string `json:"name"`
-	ID         string `json:"id"`
-	Severity   AlarmSeverity `json:"severity"`
-	Text       string `json:"text"`
-	State      int    `json:"state"`
+	Name       string          `json:"name"`
+	ID         string          `json:"id"`
+	Severity   AlarmSeverity   `json:"severity"`
+	Text       string          `json:"text"`
+	State      int             `json:"state"`
 	Visibility AlarmVisibility `json:"visibility,omitempty"`
-	SubDN      string `json:"subdn,omitempty"`
+	SubDN      string          `json:"subdn,omitempty"`
 }
 
 func (a *AlarmDetails) MarshalLogObject(enc zapcore.ObjectEncoder) error {
@@ -75,7 +75,7 @@ func init() {
 	}
 
 	logr, err := cfg.Build()
-	if nil != err {
+	if err != nil {
 		panic("unable to create a logger")
 	}
 
@@ -120,7 +120,7 @@ func InitLogger() error {
 	}
 
 	logr, err := cfg.Build()
-	if nil != err {
+	if err != nil {
 		return err
 	}
 

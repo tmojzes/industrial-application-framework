@@ -6,6 +6,7 @@ package monitoring
 
 import (
 	"context"
+
 	"github.com/nokia/industrial-application-framework/application-lib/pkg/kubelib"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/util/retry"
@@ -108,7 +109,7 @@ func (m *Monitor) Run() {
 				}
 
 				m.Instance.GetStatus().SetAppStatus(status)
-				if err := m.updateAppStatus(m.Instance); nil != err {
+				if err := m.updateAppStatus(m.Instance); err != nil {
 					log.Error(err, "status appStatus update failed")
 				}
 

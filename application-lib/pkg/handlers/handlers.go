@@ -7,6 +7,10 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"reflect"
+	"regexp"
+	"time"
+
 	"github.com/nokia/industrial-application-framework/application-lib/pkg/k8sdynamic"
 	"github.com/nokia/industrial-application-framework/application-lib/pkg/kubelib"
 	"github.com/nokia/industrial-application-framework/application-lib/pkg/licenceexpired"
@@ -20,10 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/util/retry"
-	"reflect"
-	"regexp"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 
 	netattv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/nokia/industrial-application-framework/application-lib/pkg/helm"
@@ -175,7 +176,7 @@ func (r *OperatorReconciler) handleUpdate(instance common_types.OperatorCr, name
 		return reconcile.Result{}, err
 	}
 	instance.GetStatus().SetPrevSpec(instance.GetSpec())
-	if err := r.updateStatus(instance); nil != err {
+	if err := r.updateStatus(instance); err != nil {
 		log.Error(err, "status previous spec update failed")
 	}
 
@@ -311,7 +312,7 @@ func (r *OperatorReconciler) handleCreate(instance common_types.OperatorCr, name
 	//This section is only needed if helm is not used for the deployment
 	//instance.Status.AppliedResources = append(instance.OperatorStatus.AppliedResources, appliedApplicationResourceDescriptors...)
 	instance.GetStatus().SetPrevSpec(instance.GetSpec())
-	if err := r.Client.Status().Update(context.TODO(), instance); nil != err {
+	if err := r.Client.Status().Update(context.TODO(), instance); err != nil {
 		logger.Error(err, "status applied resources and previous spec update failed")
 	}
 
